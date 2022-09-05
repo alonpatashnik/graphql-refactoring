@@ -3,8 +3,8 @@ const { signToken } = require('../utils/auth');
 
 const resolvers = {
     Query: {
-      me: async (parent, { _id }) => {
-        return User.findOne({_id: _id})
+      me: async (parent, args, context) => {
+        return User.findOne({_id: context.user._id})
       }
     },
     Mutation: {
@@ -20,7 +20,7 @@ const resolvers = {
         return res.status(400).json({ message: 'Wrong password!' });
         }
         const token = signToken(user);
-        res.json({ token, user });
+        return { token, user };
       },
 
       addUser: async (parent, args) => {
@@ -29,33 +29,33 @@ const resolvers = {
         return res.status(400).json({ message: 'Something is wrong!' });
         }
         const token = signToken(user);
-        res.json({ token, user });
+        return { token, user };
       },
 
-      saveBook: async (parent, args) => {
+      saveBook: async (parent, args, context) => {
         try {
             const updatedUser = await User.findOneAndUpdate(
-              { _id: args.user._id },
+              { _id: context.user._id },
               { $addToSet: { savedBooks: args.body } },
               { new: true, runValidators: true }
             );
-            return res.json(updatedUser);
+            return updatedUser;
           } catch (err) {
             console.log(err);
-            return res.status(400).json(err);
+            return err;
           }
       },
 
-      removeBook: async (parent, args) => {
+      removeBook: async (parent, args, context) => {
         const updatedUser = await User.findOneAndUpdate(
-            { _id: args.user._id },
+            { _id: context.user._id },
             { $pull: { savedBooks: { bookId: args.params.bookId } } },
             { new: true }
           );
           if (!updatedUser) {
             return res.status(404).json({ message: "Couldn't find user with this id!" });
           }
-          return res.json(updatedUser);
+          return updatedUser;
       }
 
     },
